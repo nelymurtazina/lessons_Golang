@@ -3,84 +3,113 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math/rand"
+	"strconv"
+	"strings"
 )
+
+type Device interface {
+	UpdateOs(version string) error
+	GetInfo() string
+}
+type Smartphone struct {
+	OSVersion string
+	Model     string
+}
+type Laptop struct {
+	OSVersion string
+	Model     string
+}
+type Smartwatch struct {
+	OSVersion string
+	Model     string
+}
 
 var (
-	ErrInvalidAmount       = errors.New("некорректная сумма платежа")
-	ErrProviderUnavailable = errors.New("провайдер недоступен")
+	ErrUnsupported = errors.New("обновление недоступно")
 )
 
-type PaymentProcessor interface {
-	ProcessPayment(amount float64) error
+func (phone *Smartphone) UpdateOS(version string) error {
+	num, err := strconv.Atoi(version)
+	if err != nil {
+		fmt.Println("Error", err)
+		return err
+	}
+	if num <= 12.0{
+		fmt.Println(ErrUnsupported)
+		return ErrUnsupported
+	}
+	phone.OSVersion = version
+	fmt.Println("Model: " + phone.Model +"," + " OC: " + phone.OSVersion)
+	return nil
 }
 
-type Sberbank struct{
-	APIKey string 
-}
-type Tbank struct{
-	APIKey string 
-}
-type Alfabank struct{
-	APIKey string 
+func (phone *Smartphone) GetInfo() string {
+	str := "Model: " + phone.Model +"," + " OC: " + phone.OSVersion
+	fmt.Println(str)
+	return str 
 }
 
-func (bank Sberbank) ProcessPayment(amount float64) error { 
-	if amount <= 0 {
-		return ErrInvalidAmount
-	}
-	shans := rand.Intn(100)
-	if shans < 25{
-		return ErrProviderUnavailable
-	}
-	if amount > 0 {
-		return nil
+func (lap *Laptop) UpdateOS(version string) error{
+	str := "Windows"
+	new := strings.Split(version, " ")
+	if str == new[0]{
+		lap.OSVersion = new[1]
+		fmt.Println(version)
+	} 
+	if str != new[0]{
+		fmt.Println(ErrUnsupported)
+		return ErrUnsupported
 	}
 	return nil
 }
-func (bank Tbank) ProcessPayment(amount float64) error { 
-	if amount <= 0 {
-		return ErrInvalidAmount
-	}
-	shans := rand.Intn(2)
-	if shans < 25{
-		return ErrProviderUnavailable
-	}
-	if amount > 0 {
-		return nil
-	}
-	return nil
+
+func (lap *Laptop) GetInfo() string {
+	str := "Model: " + lap.Model +"," + " OC: " + lap.OSVersion
+	fmt.Println(str)
+	return str 
 }
-func (bank Alfabank) ProcessPayment(amount float64) error { 
-	if amount <= 0 {
-		return ErrInvalidAmount
+
+func (whatch *Smartwatch) GetInfo() string {
+	str := "Model: " + whatch.Model +"," + " OC: " + whatch.OSVersion
+	fmt.Println(str)
+	return str 
+}
+
+func (whatch *Smartwatch) UpdateOS(version string) error{
+	new := strings.Split(version, ".")
+	if len(new) > 5 {
+		fmt.Println(ErrUnsupported)
+		return ErrUnsupported
 	}
-	shans := rand.Intn(100)
-	if shans < 25{
-		return ErrProviderUnavailable
-	}
-	if amount > 0 {
-		return nil
-	}
+	whatch.OSVersion = version
+	fmt.Println("Часы : ", whatch.Model, ",",  "Версия: ", whatch.OSVersion)
 	return nil
 }
 
 func main() {
-	sber := Sberbank{
-		APIKey: "sber",
+	tel := Smartphone{
+		OSVersion: "11.6",
+		Model: "Iphone",
 	}
-	tbank := Tbank{
-		APIKey: "tbank",
+	tel.GetInfo()
+	tel.UpdateOS("5")
+
+	HP:= Laptop{
+		OSVersion: "7",
+		Model: "Windows",
 	}
-	alfa := Alfabank{
-		APIKey: "alfa",
+	Mac:= Laptop{
+		OSVersion: "17",
+		Model: "Mac",
+	}
+	HP.UpdateOS("Windows 11")
+	Mac.UpdateOS("Mac 11")
+
+	Apple := Smartwatch{
+		OSVersion: "3.1.0",
+		Model: "Apple",
 	}
 
-	one := sber.ProcessPayment(100)
-	fmt.Println(one)
-	two := tbank.ProcessPayment(-100)
-	fmt.Println(two)
-	tree := alfa.ProcessPayment(0)
-	fmt.Println(tree)
-
+	Apple.GetInfo()
+	Apple.UpdateOS("5.1.5.3")
 }
