@@ -1,52 +1,86 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"math"
+	"math/rand"
 )
 
-type Shape interface{
-	Area() float64
-	Perimeter() float64
+var (
+	ErrInvalidAmount       = errors.New("некорректная сумма платежа")
+	ErrProviderUnavailable = errors.New("провайдер недоступен")
+)
+
+type PaymentProcessor interface {
+	ProcessPayment(amount float64) error
 }
 
-type Circle struct{
-	Radius float64
+type Sberbank struct{
+	APIKey string 
+}
+type Tbank struct{
+	APIKey string 
+}
+type Alfabank struct{
+	APIKey string 
 }
 
-type Rectangle struct{
-	width float64
-	height float64
+func (bank Sberbank) ProcessPayment(amount float64) error { 
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+	shans := rand.Intn(100)
+	if shans < 25{
+		return ErrProviderUnavailable
+	}
+	if amount > 0 {
+		return nil
+	}
+	return nil
 }
-
-func (c Circle) Area() float64{
-	pi := math.Pi
-	fmt.Println(c.Radius, "/", 2*pi*c.Radius * c.Radius)
-	return  2*pi*c.Radius * c.Radius
-	
+func (bank Tbank) ProcessPayment(amount float64) error { 
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+	shans := rand.Intn(2)
+	if shans < 25{
+		return ErrProviderUnavailable
+	}
+	if amount > 0 {
+		return nil
+	}
+	return nil
 }
-func (r Rectangle) Area() float64{
-	fmt.Println(r.width*r.height)
-	return r.width*r.height
+func (bank Alfabank) ProcessPayment(amount float64) error { 
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+	shans := rand.Intn(100)
+	if shans < 25{
+		return ErrProviderUnavailable
+	}
+	if amount > 0 {
+		return nil
+	}
+	return nil
 }
-
-func (c Circle) Perimeter() float64{
-	pi := math.Pi
-	fmt.Println(2* pi*c.Radius)
-	return 2* pi*c.Radius
-}
-
-func (r Rectangle) Perimeter() float64{
-	fmt.Println(r.width*r.height)
-	return 2*(r.width*r.height)
-}
-
 
 func main() {
-	fmt.Println("Задание 1")
-
-	circle := Circle{
-		Radius: 4.5,
+	sber := Sberbank{
+		APIKey: "sber",
 	}
-	circle.Area()
+	tbank := Tbank{
+		APIKey: "tbank",
+	}
+	alfa := Alfabank{
+		APIKey: "alfa",
+	}
+
+	one := sber.ProcessPayment(100)
+	fmt.Println(one)
+	two := tbank.ProcessPayment(-100)
+	fmt.Println(two)
+	tree := alfa.ProcessPayment(0)
+	fmt.Println(tree)
+
 }
