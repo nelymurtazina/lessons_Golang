@@ -40,5 +40,5 @@ func main() {
 	fmt.Println(ms1.MyInt)//1
 
 	ms5 := func5()
-	fmt.Println(ms5.MyInt)//последнее значение?
+	fmt.Println(ms5.MyInt)// //последнее значение?
 }
