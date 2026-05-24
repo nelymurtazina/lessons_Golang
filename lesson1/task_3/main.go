@@ -30,10 +30,12 @@ func InvertMap(m map[string]int) (map[int]string, error) {
 
 	for key, value := range m{
 		if _, ok := result[value]; ok{
-			return nil, fmt.Errorf("Уже есть такой ключ!")
+			return nil, fmt.Errorf("Уже есть такой ключ!", key)
+			//подвсветить какой ключ
 		} 
 		result[value] = key
 	}
+	//
 
 	fmt.Println(result)
 	return result,nil

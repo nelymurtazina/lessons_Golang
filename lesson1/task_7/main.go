@@ -1,19 +1,19 @@
 package main
 
-// import (
-// 	"fmt"
-// )
+import (
+	"fmt"
+)
 
-// func main() {
-// 	var numbers []*int
-// 	for _, value := range []int{10, 20, 30, 40} {
-// 		//value - одна и та же переменная.
-// 		numbers = append(numbers, &value)
-// 	}
-// 	for _, number := range numbers {
-// 		fmt.Println("d", *number) // 10,20,30,40
-// 	}
-// }
+func main() {
+	var numbers []*int
+	for _, value := range []int{10, 20, 30, 40} {
+		//value - одна и та же переменная.
+		numbers = append(numbers, &value)
+	}
+	for _, number := range numbers {
+		fmt.Println("d", *number) // 10,20,30,40
+	}
+}
 
 // //### 2.
 // package main
@@ -27,7 +27,7 @@ package main
 // 	arr[0] = "Goodbye"
 // }
 
-// func appendSomeData(arr []string) {
+// func appendSomeData(arr []string) string {
 // 	arr = append(arr, "!")
 // }
 

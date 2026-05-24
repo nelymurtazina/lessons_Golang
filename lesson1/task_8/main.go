@@ -23,6 +23,13 @@ func RemoveOrdered[T any](s []T, i int) []T {
 	}
 	copy(s[i:], s[i+1:])
 	return s[:len(s)-1]
+
+	// for index, v := range s{
+	// 	if index == i{
+	// 		s = append(s[:i], s[i+1:]...)
+	// 		fmt.Println("Удаляем", v)
+	// 	}
+	// }
 }
 
 // RemoveAllByValue удаляет все вхождения указанного значения.

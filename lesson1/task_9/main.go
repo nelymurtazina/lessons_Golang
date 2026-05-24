@@ -38,20 +38,25 @@ func main() {
 	//1
 	var data []string
 	fmt.Println("var data []string:")
-	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) //empty=true nil=true size=24 data=0x0
+	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) 
+	//empty=true nil=true size=24 data=0x0
 	//2
 	data = []string(nil)
 	fmt.Println("data = []string(nil):")
-	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) //empty=true nil=true size=24 data=0x0
+	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) 
+	//empty=true nil=true size=24 data=0x0
 	//3
 	data = []string{}
 	fmt.Println("data = []string{}")
-	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) //empty=true nil=false size=24 data=адрес_массива (не 0x0)
+	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data))
+	 //empty=true nil=false size=24 data=адрес_массива (не 0x0)
 	//4
 	data = make([]string, 0)
 	fmt.Println("data =make([]string,0)")
-	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) //empty=true nil=false size=24 data=адрес_массива (не 0x0)
+	fmt.Printf("\tempty=%t nil=%t size=%d data=%p\n", len(data) == 0, data == nil, unsafe.Sizeof(data), unsafe.SliceData(data)) 
+	//empty=true nil=false size=24 data=адрес_массива (не 0x0)
 
 	empty := struct{}{}
-	fmt.Println("empty struct address ", unsafe.Pointer(&empty)) // empty=true nil=false size=24 data=адрес_массива (не 0x0)
+	fmt.Println("empty struct address ", unsafe.Pointer(&empty)) 
+	// empty=true nil=false size=24 data=адрес_массива (не 0x0)
 }

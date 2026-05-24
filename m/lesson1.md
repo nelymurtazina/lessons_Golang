@@ -924,7 +924,3 @@ func New() *stack {
 	return &stack{}
 }
 ```
-
-
-
-

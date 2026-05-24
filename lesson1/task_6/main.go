@@ -2,21 +2,21 @@ package main
 
 import "fmt"
 
-// type account struct {
-// 	value int
-// }
+type account struct {
+	value int
+}
 
-// func main() {
-// 	s1 := make([]account, 0, 2)
-// 	s1 = append(s1, account{})
-// 	s2 := append(s1, account{})
-// 	acc := &s2[0]
-// 	acc.value = 100
-// 	fmt.Println(s1, s2) // s1 = 100, s2=100,0
-// 	s1 = append(s1, account{})
-// 	acc.value += 100
-// 	fmt.Println(s1, s2) //s1 = 200;0 s2 = 200;0
-// }
+func main() {
+	s1 := make([]account, 0, 2)
+	s1 = append(s1, account{})
+	s2 := append(s1, account{})
+	acc := &s2[0]
+	acc.value = 100
+	fmt.Println(s1, s2) // s1 = 100, s2=100,0
+	s1 = append(s1, account{})
+	acc.value += 100
+	fmt.Println(s1, s2) //s1 = 200;0 s2 = 200;0
+}
 
 // 2.
 
@@ -25,9 +25,9 @@ import "fmt"
 // 	slice = append(slice, "0", "1", "2", "3")
 // 	fmt.Println(slice, len(slice), cap(slice)) //[0 1 2 3] 4, 5
 // 	addToSlice1(slice)
-// 	fmt.Println(slice, len(slice), cap(slice)) // [1,2,one] 4, 5
+// 	fmt.Println(slice, len(slice), cap(slice)) // [0,1,2,one] 4, 5
 // 	addToSlice2(slice)
-// 	fmt.Println(slice, len(slice), cap(slice)) // [1,2,one] 4, 5! 
+// 	fmt.Println(slice, len(slice), cap(slice)) // [0, 1,2,one] 4, 5! 
 // }
 
 // func addToSlice1(slice []string) {
@@ -43,9 +43,9 @@ import "fmt"
 // func main() {
 // 	a1 := make([]int, 0, 10)
 // 	a1 = append(a1, []int{1, 2, 3, 4, 5}...) //1,2,3,4,5
-// 	a2 := append(a1, 6) // 1,2,3,4,5,6
-// 	a3 := append(a1, 7)//1,2,3,4,5,6,7
-// 	fmt.Println(a1, a2, a3) // Не поняла
+// 	a2 := append(a1, 6) // 1,2,3,4,5,7
+// 	a3 := append(a1, 7)//1,2,3,4,5,7
+// 	fmt.Println(a1, a2, a3) // 
 // }
 
 // //4
@@ -118,12 +118,12 @@ import "fmt"
 
 //9
 
-func main() {
-	slice := make([]int, 3, 4)
-	appendingSlice(slice[:1])
-	fmt.Println(slice) //
-}
+// func main() {
+// 	slice := make([]int, 3, 4)
+// 	appendingSlice(slice[:1])
+// 	fmt.Println(slice) //
+// }
 
-func appendingSlice(slice []int) {
-	slice = append(slice, 1)
-}
+// func appendingSlice(slice []int) {
+// 	slice = append(slice, 1)
+// }
