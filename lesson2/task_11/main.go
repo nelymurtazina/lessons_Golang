@@ -27,5 +27,4 @@ func Level1() {
 func main() {
     fmt.Println("Начало программы")
     Level1()
-    fmt.Println("Программа продолжает работу после обработки паники")
 }
