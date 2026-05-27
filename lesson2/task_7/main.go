@@ -10,11 +10,13 @@ func NewStack[T any]() *Stack[T]{
 	}
 }
 
-func (s Stack[T]) Push(value T){
+func (s *Stack[T]) Push(value T){
 	s.elements = append(s.elements, value)
+
+	//mutex
 }
 
-func (s Stack[T]) Pop() (T, bool){
+func (s *Stack[T]) Pop() (T, bool){
 	if len(s.elements) == 0{
 		var zero T
 		return zero, false
@@ -26,9 +28,11 @@ func (s Stack[T]) Pop() (T, bool){
 	s.elements = s.elements[:lastIndex]
 
 	return value,true
+
+	//можно в одну строчку 
 }
 
-func (s Stack[T]) Peek() (T, bool){
+func (s *Stack[T]) Peek() (T, bool){
 	if len(s.elements) == 0{
 		var zero T
 		return zero, false
@@ -37,8 +41,10 @@ func (s Stack[T]) Peek() (T, bool){
 	lastIndex := len(s.elements)-1
 	value := s.elements[lastIndex]
 	return value,true
+
+	
 }
 
-func (s Stack[T]) IsEmty() bool{
+func (s *Stack[T]) IsEmty() bool{
 	return len(s.elements) == 0
 }

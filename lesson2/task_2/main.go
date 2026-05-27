@@ -4,7 +4,10 @@ import "fmt"
 
 func main() {
 	value := 123
-	defer fmt.Println(value) //запоминает значение аргумента 123
+	defer func(){
+		fmt.Println(value)
+	}()
+	 //запоминает значение аргумента 123
 	changeValue(&value)
 }
 

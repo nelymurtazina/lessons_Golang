@@ -18,82 +18,124 @@ func RemoveUnordered[T any](s []T, i int) []T {
 // Если индекс выходит за границы слайса, возвращает исходный слайс.
 func RemoveOrdered[T any](s []T, i int) []T {
 	// реализовать
-	if i < 0 || i >= len(s) {
-		return s
-	}
-	copy(s[i:], s[i+1:])
-	return s[:len(s)-1]
 
-	// for index, v := range s{
-	// 	if index == i{
-	// 		s = append(s[:i], s[i+1:]...)
-	// 		fmt.Println("Удаляем", v)
-	// 	}
-	// }
+	for index, v := range s{
+		if index == i{
+			s = append(s[:i], s[i+1:]...)
+			fmt.Println("Удаляем", v)
+		}
+	}
+	return s
 }
 
 // RemoveAllByValue удаляет все вхождения указанного значения.
 func RemoveAllByValue[T comparable](s []T, value T) []T {
 	// реализовать
-	result := make([]T, 0, len(s))
+	// result := make([]T, 0, len(s))
 
-	for _, v := range s {
-		if v != value {
-			result = append(result, v)
-		}
-	}
-		return result
+	//было
+	// for _, v := range s {
+	// 	if v != value {
+	// 		result = append(result, v)
+	// 	}
+	// }
+	// 	return result
+
+	//переделать! переиспользовать RemoveUnordered
+	for i := 0; i < len(s); i++ {
+        if s[i] == value {
+            s = RemoveOrdered(s, i)
+            i-- // компенсируем сдвиг из фун-и RemoveOrdered
+        }
+    }
+    return s
 	}
 
 // RemoveDuplicates оставляет только уникальные элементы (сохраняет порядок).
 func RemoveDuplicates[T comparable](s []T) []T {
 	// реализовать
+	// if len(s) == 0 {
+	// 	return s
+	// }
+	// seen := make(map[T]bool)
+
+	// result := make([]T, 0, len(s))
+
+	// for _, v := range s {
+	// 	if !seen[v] {
+	// 		seen[v] = true
+	// 		result = append(result, v)
+	// 	}
+	// }
+	// return result
+
+	// через указтели (изменяем исходный слайс)
+	//
 	if len(s) == 0 {
 		return s
 	}
+
 	seen := make(map[T]bool)
-
-	result := make([]T, 0, len(s))
-
+  writeIndex := 0
+	
 	for _, v := range s {
-		if !seen[v] {
-			seen[v] = true
-			result = append(result, v)
-		}
-	}
-	return result
+    if !seen[v] {
+      seen[v] = true
+      s[writeIndex] = v  // записываем поверх существующих
+      writeIndex++
+    }
+  }
+	return s[:writeIndex]
 }
 
 // RemoveIf удаляет элементы, удовлетворяющие условию predicate.
 func RemoveIf[T any](s []T, predicate func(T) bool) []T {
 	// реализовать
 	result := make([]T, 0, len(s))
-
+//1,2,3,4
 	for _, v := range s {
 		if !predicate(v) {
 			result = append(result, v)
 			}
 		}
 		return result
+
+		
 }
 
 // RemoveOrderedWithNil удаляет элемент по индексу (для слайса указателей),
 // обнуляя удаляемый элемент для предотвращения утечек памяти.
 func RemoveOrderedWithNil[T any](s []*T, i int) []*T {
-	//реализовать
-	if i < 0 || i >= len(s) {
+	//реализовать (было)
+	// if i < 0 || i >= len(s) {
+	// 	return s
+	// }
+	// s[i] = nil
+
+	// copy(s[i:], s[i+1:])
+
+	// result := s[:len(s)-1]
+
+	// if len(result) < cap(result) {
+	// 	result[len(result)-1] = nil
+		
+	// }
+	
+	// return result
+
+	//переделать! ошибка nil pointer dereference возникает, 
+	// потому что в слайсе после удаления остался nil элемент
+	if i<0 || i>= len(s){
 		return s
 	}
 	s[i] = nil
-
 	copy(s[i:], s[i+1:])
-
+	// s[i] = s[len(s)-1]
 	result := s[:len(s)-1]
-
-	if len(result) < cap(result) {
-		result[len(result)-1] = nil
+	// result[len(s)-1] = nil
+	if cap(result)>len(result){
+		result[:cap(result)][len(result)] = nil
 	}
-	
 	return result
 }
 
@@ -120,7 +162,7 @@ func main() {
 	s1 := []int{10, 20, 30, 40, 50}
 	fmt.Println("Исходный: ", s1)
 	s1 = RemoveUnordered(s1, 2)
-	fmt.Println("После удаления индекса 2: ", s1)
+	fmt.Println("После удаления индекса: ", s1)
 
 	s2 := []string{"a", "b", "c", "d", "e"}
 	fmt.Println("Исходный: ", s2)
