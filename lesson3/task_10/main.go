@@ -6,25 +6,30 @@ import (
 	"time"
 )
 
-type SafeCache struct {
-	mu   sync.Mutex
+//можно безопасно использовать из нескольких горутин (легковесных потоков) одновременно
+type SafeCache struct{
 	data map[string]string
+	mu sync.RWMutex
 }
 
-func (cache *SafeCache) Set(key string, value string) {
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
-	cache.data[key] = value
+func (c *SafeCache) Set(key string, value string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.data[key] = value
 }
 
-func (cache *SafeCache) Get(key string) (string, bool){
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
-	val, ok := cache.data[key]
-	return val,ok
+func (c *SafeCache) Get(key string) (string, bool){
+	c.mu.RLock()
+	val := c.data[key]
+	boolVal := false
+	if val != ""{
+		boolVal = true
+	}
+	c.mu.RUnlock()
+	return val, boolVal
 }
 
-func main() {
+func main(){
 	cache := &SafeCache{
 		data: make(map[string]string),
 	}
@@ -47,5 +52,5 @@ func main() {
 		}(i)
 	}
 
-	time.Sleep(time.Second) 
+	time.Sleep(time.Second)
 }
