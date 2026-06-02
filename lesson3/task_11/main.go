@@ -9,115 +9,99 @@ import (
 // Но если что мы с тобой и так пройдем эти темы. А если хочешь прям догнать,то вот дополнительные ресурсы. Можем отдельно встречу организовать по вопросам::
 // https://victoriametrics.com/blog/go-sync-once/
 
+//Не всегда понимаю, какие поля должны быть у структуры
 type Comment struct{
-	Id string
-	AuthorID string
-	Text string
+	id int
+	text string
+	userId int
 }
-
 type User struct{
-	Id string
-	Name string
+	id int
+	name string
 }
-
-type Sessia struct{
-	Id string
-	IsValid   bool
+type Sesion struct{
+	sessionId string
+	userId int
 }
-
 type File struct{
-	CommentID string
-	FileURL   string
+	id int
+	url string
+	commentId int
 }
 
-// loadComments имитирует загрузку комментариев из БД
-func loadComments() []Comment{
-	time.Sleep(500*time.Millisecond)
-	return []Comment{
-		{Id: "1", AuthorID: "user1", Text: "Первый комментарий"},
-	}
-}
-
-func loadSesia() Sessia{
-	time.Sleep(300*time.Millisecond)
-	return Sessia{
-		Id: "session1",
-		IsValid: true,
-	}
-}
-
-func loadUser(userId string) User{
-	time.Sleep(100 * time.Millisecond)
-	return User{Id: userId, Name: "Пользователь " + userId}
-}
-
-func loadFile(comments []Comment, sessionId string){
-	fmt.Println("Загрузка сессии: ", sessionId)
+func loadComment(comments *[]Comment, wg *sync.WaitGroup){
+	defer wg.Done()
+	
+	fmt.Println("Загрузка комментариев")
 	time.Sleep(200*time.Millisecond)
-	fmt.Println("Вложения загружены")
+	
+	*comments = []Comment{
+		{id: 1, text: "One", userId: 1},
+	}
+	
+	fmt.Println("Комментарии загружены")
+
+}
+
+func (s *Sesion) loadSession(session *Sesion, wg *sync.WaitGroup){
+	fmt.Println("Загрузка session")
+	defer wg.Done()
+	time.Sleep(100*time.Millisecond)
+	
+	*session = Sesion{
+		sessionId: "abc",
+		userId: 1,
+	}
+	fmt.Println("Session загружены")
+}
+
+func loadUser(userId int, users *map[int]User, wg *sync.WaitGroup){
+	defer wg.Done()
+	time.Sleep(100 * time.Millisecond)
+
+	(*users)[userId] = User{
+		id: userId,
+		name: string(userId),
+	}
+
+	fmt.Println("Users загружены")
 }
 
 func main(){
-	//Независимые Комментарии и сессии
-	comments := []Comment{}
-	session := Sessia{}
-	users := make(map[string]User)
 	wg := sync.WaitGroup{}
-	once := sync.Once{}
+	wgCom := sync.WaitGroup{}
 
-	wg.Add(2)
-
-	go func(){
-		defer wg.Done()
-		fmt.Println("Загрузка")
-		comments = loadComments()
-		fmt.Println("Загрузка комментариев: ", len(comments))
-	}()
-
-	go func(){
-		defer wg.Done()
-		fmt.Println("Загрузка")
-		session = loadSesia()
-		if session.IsValid{
-			fmt.Println("Загрузка сессии: ", session.Id)
-		} else{
-			fmt.Println("Сессия не найдена")
-		}
-	}()
-
-	wg.Wait()
+	var comments []Comment
+	var session Sesion
+	// тк будем искать пользователя по id, чтобы находить мгновенно
+	users := make(map[int]User)
+	
+	sission := &Sesion{}
 
 	wg.Add(1)
-  go func() {
-    defer wg.Done()
-		// Собираем уникальные ID авторов
-    userIDs := make(map[string]bool)
+	go loadComment(&comments, &wg)
+	
+	wg.Add(1)
+	go sission.loadSession(&session, &wg)
 
-    for _, c := range comments {
-      userIDs[c.AuthorID] = true
-    }
+	wgCom.Wait()
+	fmt.Println("Comment загружены")
 
-		for userID := range userIDs {
-  	user := loadUser(userID)
-    users[userID] = user
-    fmt.Println("Загружен пользователь: ", user.Name, user.Id)
-  }
-	}()
-
-	wg.Wait()
-
-	if session.IsValid && session.Id != "" {
-		once.Do(func() {
-			fmt.Println("Загрузка вложений ")
-			loadFile(comments, session.Id)
-		})
-	} else {
-		fmt.Println("Нет вложений")
+	fmt.Println("загрузка пользователей")
+	//проходимся по всем комментариям и собираем userId
+	unicUser := make(map[int]bool)
+	for _, comm := range comments{
+		unicUser[comm.id] = true
 	}
 
-	fmt.Println("Комментарии:")
-	for _, c := range comments {
-    user := users[c.AuthorID]
-    fmt.Printf(c.Id, user.Name, c.Text)
-  }
+	// Запускаем загрузку каждого пользователя
+	for userID := range unicUser{
+		wg.Add(1)
+		go loadUser(userID, &users, &wg)
+	}
+	wg.Wait()
+
+	fmt.Println("Sessions", session.sessionId)
+	fmt.Println("Comments", comments)
+	fmt.Println("Users", users)
 }
