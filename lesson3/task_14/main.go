@@ -11,78 +11,77 @@ import (
 // https://dev.to/func25/go-synccond-the-most-overlooked-sync-mechanism-1fgd
 // https://wcademy.ru/go-multithreading-sync-cond/
 
-type Connection struct {
-	ID int  // просто идентификатор подключения
+//Не разобралась я с пуллом. Что вообще дает этот пул
+
+type Connection struct{
+	ID int
 }
 
-type ConnectionPool struct {
-	connections []*Connection  // хранилище
-	available   int            // сколько свободно сейчас
-	capacity    int            // максимальное количество
-	mu          sync.Mutex     // защита данных
-	cond        *sync.Cond     // условная переменная
+type ConnectionPool struct{
+	connections []*Connection
+	maxConnect int
+	svobod []*Connection //свободные соединения
+	mu sync.Mutex
+	cond *sync.Cond
 }
 
-func NewConnectionPool(capacity int) *ConnectionPool {
-	connections := make([]*Connection, capacity)
-	for i := 0; i < capacity; i++ {
-		connections[i] = &Connection{ID: i + 1}
+func NewConnectionPool(maxCon int) *ConnectionPool{
+	pool := &ConnectionPool{
+		svobod: make([]*Connection, 0, maxCon),
+		maxConnect: maxCon,
 	}
 
-	p := &ConnectionPool{
-		connections: connections,
-		available:   capacity,
-		capacity:    capacity,
-	}
-	p.cond = sync.NewCond(&p.mu)
-	return p
-}
-
-func (p *ConnectionPool) Get() *Connection {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	for p.available == 0 {
-		p.cond.Wait()
-	}
-
-	for i, conn := range p.connections {
-		if conn != nil {
-			p.connections[i] = nil
-			p.available--
-			return conn
+	// Создаем maxSize соединений
+	for i := 1; i <= maxCon; i++{
+		conn := &Connection{
+			ID:i,
 		}
+		pool.svobod = append(pool.svobod, conn) // все свободны
 	}
-	return nil
+
+	pool.cond = sync.NewCond(&pool.mu)
+	return pool
 }
 
-func (p *ConnectionPool) Release(conn *Connection) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// Если есть свободное соединение - взять его и вернуть
+//Если нет свободных - ждать (cond.Wait)
+func (c *ConnectionPool) Get() *Connection{
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	for i := 0; i < p.capacity; i++ {
-		if p.connections[i] == nil {
-			p.connections[i] = conn
-			break
-		}
+	// ПОКА нет свободных И пул не закрыт - жди
+	for len(c.svobod) == 0{
+		c.cond.Wait()
 	}
-	p.available++
 
-	p.cond.Signal()
+	// Берем первое свободное
+	conn := c.svobod[0]
+	c.svobod = c.svobod[1:]
+	return conn
 }
+
+func (c *ConnectionPool) Release(conn *Connection){
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.svobod = append(c.svobod, conn)
+
+	c.cond.Signal()
+}
+
 
 func main() {
-	pool := NewConnectionPool(3)
+    pool := NewConnectionPool(3) // Пул на 3 подключения
 
-	for i := 0; i < 10; i++ {
-		go func(id int) {
-			conn := pool.Get()
-			defer pool.Release(conn)
+    for i := 0; i < 10; i++ {
+        go func(id int) {
+            conn := pool.Get()
+            defer pool.Release(conn)
 
-			fmt.Println("Горутина", id, "получила подключение", conn.ID)
-			time.Sleep(2 * time.Second)
-		}(i)
-	}
+            fmt.Printf("Горутина %d: подключение %d получено\n", id, conn.ID)
+            time.Sleep(2 * time.Second) // Имитация работы
+        }(i)
+    }
 
-	time.Sleep(10 * time.Second)
+    time.Sleep(10 * time.Second)
 }
