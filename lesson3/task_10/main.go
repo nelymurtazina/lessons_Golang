@@ -20,13 +20,10 @@ func (c *SafeCache) Set(key string, value string) {
 
 func (c *SafeCache) Get(key string) (string, bool){
 	c.mu.RLock()
-	val := c.data[key]
-	boolVal := false
-	if val != ""{
-		boolVal = true
-	}
-	c.mu.RUnlock()
-	return val, boolVal
+	defer c.mu.RUnlock()
+
+	val, ok := c.data[key]	
+	return val, ok
 }
 
 func main(){
@@ -52,5 +49,6 @@ func main(){
 		}(i)
 	}
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second) // wg
+	//поработать с неймингом!
 }

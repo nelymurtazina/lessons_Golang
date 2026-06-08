@@ -6,50 +6,76 @@ import (
 	"time"
 )
 
-type Restaurant struct{
-	table []int
-	maxTables int
+type Restaurant struct {
+	freeTables int // количество свободных столиков
+	totalTables int 
 	mu sync.Mutex
-	cond  *sync.Cond
+	cond *sync.Cond // условная переменная для ожидания
 }
 
-func NewRestaurant(maxWight int) *Restaurant{
-	return &Restaurant{
-		table: make([]int, 0, maxWight),
-		maxTables: maxWight,
+// NewRestaurant - создает новый ресторан
+func NewRestaurant(totalTables int) *Restaurant {
+	r := &Restaurant{
+		freeTables:  totalTables, // изначально все столики свободны
+		totalTables: totalTables,
 	}
+	r.cond = sync.NewCond(&r.mu) // связываем cond с мьютексом
+	return r
 }
 
-func (res *Restaurant) Bronirovanie(wg *sync.WaitGroup){
-	defer wg.Done()  // сообщаем, что горутина завершилась
-    
-	for i := 1; i <= res.maxTables; i++ {
-		res.mu.Lock()
-		if len(res.table) < res.maxTables {
-			res.table = append(res.table, i)
-			fmt.Printf("Столик %d заняли. Свободно: %d\n", i, res.maxTables - len(res.table))
-		} else {
-			fmt.Println("Все столики уже заняты!")
-			res.mu.Unlock()
-			break
-		}
-		
-		res.mu.Unlock()
-		// Имитация времени на обслуживание
-		time.Sleep(100 * time.Millisecond)
-  }
+// OccupyTable - посетитель занимает столик
+// Если свободных столиков нет - горутина засыпает
+func (r *Restaurant) OccupyTable(visitorID int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for r.freeTables == 0 {
+		fmt.Printf("Посетитель %d: Нет свободных столиков, жду...\n", visitorID)
+		r.cond.Wait() // усыпляем горутину (и отпускаем мьютекс)
+	}
+
+	r.freeTables--
+	fmt.Printf("Посетитель %d занял столик. Свободно столиков: %d/%d\n", 
+		visitorID, r.freeTables, r.totalTables)
 }
 
+// ReleaseTable - посетитель освобождает столик
+func (r *Restaurant) ReleaseTable(visitorID int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-func main(){
+	r.freeTables++
+	fmt.Printf("Посетитель %d освободил столик. Свободно столиков: %d/%d\n", 
+		visitorID, r.freeTables, r.totalTables)
+
+	// Будим ОДНОГО ожидающего посетителя (Signal)
+	r.cond.Signal()
+}
+
+func Visitor(id int, restaurant *Restaurant, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// Занять столик
+	restaurant.OccupyTable(id)
+	
+	time.Sleep(100*time.Millisecond) 
+	
+	restaurant.ReleaseTable(id)
+	
+}
+
+func main() {
+	restaurant := NewRestaurant(3)
+	
 	var wg sync.WaitGroup
-    
-  res := NewRestaurant(5)
-    
-  wg.Add(1)
-  go res.Bronirovanie(&wg)
-    
-  fmt.Println("Начало бронирования")
-  wg.Wait()  // ждем завершения горутины
-  fmt.Println("Бронирование завершено")
+	totalVisitors := 7 
+	
+	for i := 1; i <= totalVisitors; i++ {
+		wg.Add(1)
+		go Visitor(i, restaurant, &wg)
+		time.Sleep(300 * time.Millisecond)
+	}
+	
+	wg.Wait()
+	
 }

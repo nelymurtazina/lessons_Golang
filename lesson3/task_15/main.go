@@ -3,50 +3,66 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
-type Connection struct{
+type Connection struct {
 	ID int
 }
 
-type DataBase struct{
-	conn *Connection 
+type DataBase struct {
+	conn *Connection
+	err  error 
 	once sync.Once
 }
 
-func (db *DataBase) GetConnection() *Connection{
-	//выполнится ТОЛЬКО ОДИН РАЗ
-	db.once.Do(func() {
-		fmt.Println("Подключение к БД")
-		time.Sleep(1 * time.Second)
-		db.conn = &Connection{ID: 1}
-		fmt.Println("Подключение создано")
-	})
-	//если нет - создает, сохраняет и возвращает подключение 
-	//если есть - возвращают подключение (не создают заново)
-	return db.conn
+func NewDatabase() *DataBase {
+	return &DataBase{}
 }
 
-func main(){
-	db := &DataBase{}
+func (db *DataBase) GetConnection() (*Connection, error) {
+	db.once.Do(func() {
+		// true на false, чтобы протестировать ошибку
+		success := true
+		
+		if success {
+			db.conn = &Connection{ID: 1}
+			db.err = nil
+			fmt.Println("Подключение создано успешно")
+		} else {
+			db.conn = nil
+			db.err = fmt.Errorf("ошибка подключения: сервер БД недоступен")
+			fmt.Println(db.err)
+		}
+	})
+	
+	return db.conn, db.err
+}
 
+func main() {
+	db := NewDatabase()
 	var wg sync.WaitGroup
-
 	countGo := 10
 
-	for i := 0; i<countGo;i++{
+	for i := 0; i < countGo; i++ {
 		wg.Add(1)
-		go func (id int) {
+		go func(id int) {
 			defer wg.Done()
-			conn := db.GetConnection()
-			fmt.Println("Подключение: ", conn.ID)
+			
+			conn, err := db.GetConnection() 
+			if err != nil {
+				fmt.Printf("Горутина %d: %v\n", id, err)
+				return
+			}
+			fmt.Printf("Горутина %d: получила соединение %d\n", id, conn.ID)
 		}(i)
 	}
 
 	wg.Wait()
 
-	fmt.Println("Тест, повторный вызов")
-	conn := db.GetConnection()
-	fmt.Println("Подключение: ", conn.ID)
+	conn, err := db.GetConnection()
+	if err != nil {
+		fmt.Printf("Ошибка: %v\n", err)
+	} else {
+		fmt.Printf("Подключение: %d\n", conn.ID)
+	}
 }

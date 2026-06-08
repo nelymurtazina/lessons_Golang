@@ -18,115 +18,111 @@ import (
 
 //Продюсеры (кто кладет задачи)
 //Консьюмеры (кто забирает задачи)
-//Может быть попробовать с нуля вместо выполнить это задание. ЧТобы я поняла, как нужно мыслить, когда данно такое условие
 
-type BoundedQueue struct{
-	mu sync.Mutex 
-	close bool // флаг закрытия
-	maxWight int 
-	queue []interface{} //как я должна была понять, что тут должен быть интерфейс? из того, что мы передаем в параметр. Чет сложновато((
-	cond  *sync.Cond
+type BoundedQueue struct {
+	mu        sync.Mutex
+	isClosed  bool          // переименовано (close - плохое имя)
+	maxWeight int           // исправлена опечатка
+	queue     []interface{}
+	cond      *sync.Cond
 }
 
-//На что нужно смотреть, чтобы сразу понять, что 100% нужен конструтор? 
-// я понимаю для чего он нужен, по типу: создавать и настраивать объект в нач.состоянии.
-//КАК НАУЧИТСЯ МЫСЛИТЬ 
-func NewBoundedQueue(maxWight int) *BoundedQueue{
+func NewBoundedQueue(maxWeight int) *BoundedQueue {
 	bq := &BoundedQueue{
-		queue: make([]interface{}, 0),
-		maxWight: maxWight,
-		close: false,
+		queue:     make([]interface{}, 0),
+		maxWeight: maxWeight,
+		isClosed:  false,
 	}
-	bq.cond = sync.NewCond(&bq.mu) //почему NewCond??
-	return bq 
+	bq.cond = sync.NewCond(&bq.mu)
+	return bq
 }
 
-func (bq *BoundedQueue) Put(task interface{}){
+func (bq *BoundedQueue) Put(task interface{}) {
 	bq.mu.Lock()
 	defer bq.mu.Unlock()
-	// Почему у меня ошибка bq.close == true - почему нельзя явно присвоить ?
-	for !bq.close && len(bq.queue) >= bq.maxWight{
-		//нужно добавить условие когда очередь заполнена, но я не уверена, что так пишется
-		fmt.Println("Ждем чего-то")
-		bq.cond.Wait() 
+
+	// Ждем, пока очередь не освободится (НЕ закрыта И есть место)
+	for !bq.isClosed && len(bq.queue) >= bq.maxWeight {
+		bq.cond.Wait() // Усыпляем продюсера
 	}
 
-	if bq.close == true{
+	// Если очередь закрыта - не добавляем новые задачи
+	if bq.isClosed {
 		return
 	}
 
-	fmt.Println("Данные готовы")
-
-	bq.queue = append(bq.queue, task) //добавила элемент
-	bq.cond.Signal() // Отправляем сигнал ВСЕМ горутинам
-
+	// Добавляем задачу
+	bq.queue = append(bq.queue, task)
+	
+	// Будим ОДНОГО консьюмера (теперь в очереди есть данные)
+	bq.cond.Signal()
 }
 
-func (bq *BoundedQueue) Get() interface{}{
+func (bq *BoundedQueue) Get() interface{} {
 	bq.mu.Lock()
 	defer bq.mu.Unlock()
-	
-	for !bq.close && len(bq.queue) == 0{
-		//нужно добавить условие когда очередь заполнена, но я не уверена, что так пишется
-		fmt.Println("Очередь пуста! Ждем чего-то")
-		bq.cond.Wait() 
+
+	// Ждем, пока появятся данные (НЕ закрыта И очередь не пуста)
+	for !bq.isClosed && len(bq.queue) == 0 {
+		bq.cond.Wait() // Усыпляем консьюмера
 	}
 
-	if bq.close == true{
+	// Если очередь закрыта и данных нет - завершаемся
+	if bq.isClosed && len(bq.queue) == 0 {
 		return nil
 	}
 
-	fmt.Println("Данные готовы")
-
+	// Забираем первый элемент
 	task := bq.queue[0]
 	bq.queue = bq.queue[1:]
-	bq.cond.Signal() // Отправляем сигнал ВСЕМ горутинам
+
+	// Будим ОДНОГО продюсера (освободилось место)
+	bq.cond.Signal()
+	
 	return task
 }
 
-func (bq *BoundedQueue) Shutdown(){
+func (bq *BoundedQueue) Shutdown() {
 	bq.mu.Lock()
 	defer bq.mu.Unlock()
 
-	bq.close = true
-
-	//ОКАЗЫВАЕТСЯ! Если есть и спящие продюсеры, и спящие консьюмеры — Signal() разбудит только одного. 
-	// Остальные останутся спать навсегда (утечка).
-	bq.cond.Broadcast()
+	bq.isClosed = true
+	bq.cond.Broadcast() // Будим ВСЕХ (и продюсеров, и консьюмеров)
 }
 
-func main(){
-	queue := NewBoundedQueue(3)  // очередь на 3 элемента
-    
-    // Запускаем 5 продюсеров
-    for i := 0; i < 5; i++ {
-        go func(id int) {
-            for j := 0; j < 10; j++ {
-                queue.Put(fmt.Sprintf("task from %d: %d", id, j))
-                fmt.Printf("Продюсер %d положил задачу\n", id)
-            }
-        }(i)
-    }
-    
-    // Запускаем 3 консьюмера
-    for i := 0; i < 3; i++ {
-        go func(id int) {
-            for {
-                task := queue.Get()
-                if task == nil {  // очередь закрыта
-                    fmt.Printf("Консьюмер %d завершает работу\n", id)
-                    return
-                }
-                fmt.Printf("Консьюмер %d обработал: %v\n", id, task)
-                time.Sleep(100 * time.Millisecond)  // имитация работы
-            }
-        }(i)
-    }
-    
-    // Работаем 5 секунд, затем закрываем
-    time.Sleep(5 * time.Second)
-    queue.Shutdown()
-    fmt.Println("Очередь закрыта")
-    
-    time.Sleep(1 * time.Second)  // даем горутинам завершиться
+func main() {
+	queue := NewBoundedQueue(3)
+
+	// Продюсеры (5 штук)
+	for i := 0; i < 5; i++ {
+		go func(id int) {
+			for j := 0; j < 10; j++ {
+				queue.Put(fmt.Sprintf("task from %d: %d", id, j))
+			}
+			fmt.Printf("Продюсер %d завершил работу\n", id)
+		}(i)
+	}
+
+	// Консьюмеры (3 штуки)
+	for i := 0; i < 3; i++ {
+		go func(id int) {
+			for {
+				task := queue.Get()
+				if task == nil { // Очередь закрыта
+					fmt.Printf("Консьюмер %d завершает работу\n", id)
+					return
+				}
+				fmt.Printf("Консьюмер %d обработал: %v\n", id, task)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}(i)
+	}
+
+	// Работаем 5 секунд
+	time.Sleep(5 * time.Second)
+	queue.Shutdown()
+	fmt.Println("Очередь закрыта")
+
+	time.Sleep(1 * time.Second) // Даем горутинам завершиться
+	fmt.Println("Программа завершена")
 }

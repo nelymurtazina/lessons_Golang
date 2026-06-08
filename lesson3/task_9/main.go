@@ -9,6 +9,8 @@ import (
 // https://www.youtube.com/watch?v=luQlkud-jKE&t=5s
 // https://habr.com/ru/companies/pt/articles/764850/
 
+//норм
+
 func parseFunc(ch <-chan string) <-chan string {
 	newCh := make(chan string)
 	
@@ -41,7 +43,7 @@ func split(ch <-chan string, n int) []<-chan string {
 
 	for data := range ch {
 		splitChan[current] <- data
-		current = (current + 1) % n //Как работает вообще не поняла, и можно ли использовать переход к другой иттерации без этого?
+		current = (current + 1) % n 
 	}
 }()
 

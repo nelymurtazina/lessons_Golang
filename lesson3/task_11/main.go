@@ -4,104 +4,94 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"strconv"
 )
 
 // Но если что мы с тобой и так пройдем эти темы. А если хочешь прям догнать,то вот дополнительные ресурсы. Можем отдельно встречу организовать по вопросам::
 // https://victoriametrics.com/blog/go-sync-once/
 
-//Не всегда понимаю, какие поля должны быть у структуры
 type Comment struct{
-	id int
-	text string
-	userId int
+	ID int
+	Text string
+	UserId int
 }
 type User struct{
-	id int
-	name string
+	ID int
+	Name string
 }
-type Sesion struct{
-	sessionId string
-	userId int
-}
-type File struct{
-	id int
-	url string
-	commentId int
+type Session struct{
+	SessionId string
+	UserId int
 }
 
-func loadComment(comments *[]Comment, wg *sync.WaitGroup){
+func loadComments(comments *[]Comment, wg *sync.WaitGroup){
 	defer wg.Done()
 	
-	fmt.Println("Загрузка комментариев")
 	time.Sleep(200*time.Millisecond)
-	
+
 	*comments = []Comment{
-		{id: 1, text: "One", userId: 1},
+		{ID: 1,Text: "Первый", UserId: 101},
 	}
-	
+
 	fmt.Println("Комментарии загружены")
-
 }
 
-func (s *Sesion) loadSession(session *Sesion, wg *sync.WaitGroup){
-	fmt.Println("Загрузка session")
+func loadSession(session *Session, wg *sync.WaitGroup){
 	defer wg.Done()
+
 	time.Sleep(100*time.Millisecond)
-	
-	*session = Sesion{
-		sessionId: "abc",
-		userId: 1,
+
+	*session = Session{
+		SessionId: "session-123",
+		UserId: 101,
 	}
-	fmt.Println("Session загружены")
+
+	fmt.Println("Сессия загружены")
 }
 
-func loadUser(userId int, users *map[int]User, wg *sync.WaitGroup){
+func loadUser(userId int, users *map[int]User, mu *sync.Mutex, wg *sync.WaitGroup){
 	defer wg.Done()
-	time.Sleep(100 * time.Millisecond)
 
+	time.Sleep(100*time.Millisecond)
+
+	mu.Lock()
 	(*users)[userId] = User{
-		id: userId,
-		name: string(userId),
+		ID: userId,
+		Name: "User_" + strconv.Itoa(userId),
 	}
+	mu.Unlock()
 
-	fmt.Println("Users загружены")
+	fmt.Println("Загружен пользователь")
 }
 
 func main(){
-	wg := sync.WaitGroup{}
-	wgCom := sync.WaitGroup{}
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 
 	var comments []Comment
-	var session Sesion
-	// тк будем искать пользователя по id, чтобы находить мгновенно
+	var session Session
 	users := make(map[int]User)
-	
-	sission := &Sesion{}
 
-	wg.Add(1)
-	go loadComment(&comments, &wg)
-	
-	wg.Add(1)
-	go sission.loadSession(&session, &wg)
+	wg.Add(2)
+	go loadComments(&comments, &wg)
+	go loadSession(&session, &wg)
+	wg.Wait()
 
-	wgCom.Wait()
-	fmt.Println("Comment загружены")
-
-	fmt.Println("загрузка пользователей")
-	//проходимся по всем комментариям и собираем userId
-	unicUser := make(map[int]bool)
-	for _, comm := range comments{
-		unicUser[comm.id] = true
+	uniqueUserIDs := make(map[int]bool)
+	for _, comcomments := range comments{
+		uniqueUserIDs[comcomments.UserId] = true
 	}
 
-	// Запускаем загрузку каждого пользователя
-	for userID := range unicUser{
-		wg.Add(1)
-		go loadUser(userID, &users, &wg)
+	wg.Add(len(uniqueUserIDs))
+	for userID := range uniqueUserIDs{
+		go loadUser(userID, &users,&mu,&wg)
 	}
 	wg.Wait()
 
-	fmt.Println("Sessions", session.sessionId)
-	fmt.Println("Comments", comments)
-	fmt.Println("Users", users)
+	fmt.Printf("Сессия: %s\n", session.SessionId)
+	fmt.Printf("Пользователей: %d\n", len(users))
+	for _, u := range users {
+		fmt.Printf("   - %d: %s\n", u.ID, u.Name)
+	}
+	fmt.Printf("Комментариев: %d\n", len(comments))
 }

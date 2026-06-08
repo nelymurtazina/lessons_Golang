@@ -7,28 +7,28 @@ import (
 	"sync"
 )
 
-func worldCount(file string, wg *sync.WaitGroup, results chan <-int) {
+func readFile(res chan int, file string,wg *sync.WaitGroup){
 	defer wg.Done()
 	data, err := os.ReadFile(file)
-
-	if err != nil{
-		fmt.Println("Error")
+	if err != nil {
+		fmt.Println("ОШИБКА")
 	}
-	str := string(data)
-	fmt.Println("Text: ", str)
 
+	str := string(data)
 	words := strings.Fields(str)
 	count := len(words)
-	fmt.Println("Количество слов: ", count)
-	
-	results <- count
+
+	fmt.Println("Text: ", str)
+	fmt.Println("Кол-во слов: ", count)
+
+	res <- count
 }
 
-func statisticFunc(results <-chan int) {
+func statistic(ch <- chan int){
 	sum := 0
 	count := 0
 
-	for r := range results {
+	for r := range ch {
 		sum += r
 		count++
 	}
@@ -40,30 +40,30 @@ func statisticFunc(results <-chan int) {
 		fmt.Println("Сумма всех слов: ", sum)
 		fmt.Println("Среднее количество слов в файле: ", float64(sum)/float64(count))
 	}
-
 }
 
+
 func main() {
+	//fan-out!
 	files := []string{
 		"./text/one.txt",
 		"./text/two.txt",
 		"./text/three.txt",
 	}
+	result := make(chan int)
 
-	results := make(chan int, len(files))
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < len(files); i++{
+	for i:=0;i<len(files);i++{
 		wg.Add(1)
-		go worldCount(files[i], &wg, results)
+		go readFile(result, files[i], &wg)
 	}
-	
-	 go func() {
-      wg.Wait()
-      close(results)
-    }()
 
-		statisticFunc(results)
+  go func(){
+		wg.Wait()
+		close(result)
+	}()
 
 	
+	statistic(result)
 }

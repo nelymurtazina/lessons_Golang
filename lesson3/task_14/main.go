@@ -11,7 +11,6 @@ import (
 // https://dev.to/func25/go-synccond-the-most-overlooked-sync-mechanism-1fgd
 // https://wcademy.ru/go-multithreading-sync-cond/
 
-//Не разобралась я с пуллом. Что вообще дает этот пул
 
 type Connection struct{
 	ID int
@@ -20,14 +19,14 @@ type Connection struct{
 type ConnectionPool struct{
 	connections []*Connection
 	maxConnect int
-	svobod []*Connection //свободные соединения
+	free []*Connection //свободные соединения
 	mu sync.Mutex
 	cond *sync.Cond
 }
 
 func NewConnectionPool(maxCon int) *ConnectionPool{
 	pool := &ConnectionPool{
-		svobod: make([]*Connection, 0, maxCon),
+		free: make([]*Connection, 0, maxCon),
 		maxConnect: maxCon,
 	}
 
@@ -36,7 +35,7 @@ func NewConnectionPool(maxCon int) *ConnectionPool{
 		conn := &Connection{
 			ID:i,
 		}
-		pool.svobod = append(pool.svobod, conn) // все свободны
+		pool.free = append(pool.free, conn) // все свободны
 	}
 
 	pool.cond = sync.NewCond(&pool.mu)
@@ -50,13 +49,13 @@ func (c *ConnectionPool) Get() *Connection{
 	defer c.mu.Unlock()
 
 	// ПОКА нет свободных И пул не закрыт - жди
-	for len(c.svobod) == 0{
+	for len(c.free) == 0{
 		c.cond.Wait()
 	}
 
 	// Берем первое свободное
-	conn := c.svobod[0]
-	c.svobod = c.svobod[1:]
+	conn := c.free[0]
+	c.free = c.free[1:]
 	return conn
 }
 
@@ -64,7 +63,7 @@ func (c *ConnectionPool) Release(conn *Connection){
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.svobod = append(c.svobod, conn)
+	c.free = append(c.free, conn)
 
 	c.cond.Signal()
 }
@@ -80,6 +79,7 @@ func main() {
 
             fmt.Printf("Горутина %d: подключение %d получено\n", id, conn.ID)
             time.Sleep(2 * time.Second) // Имитация работы
+						//контекст
         }(i)
     }
 

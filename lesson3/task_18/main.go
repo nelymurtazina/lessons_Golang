@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"sync"
+	"unicode"
 )
+
+//ПЕРЕДЕЛАТЬ
 
 var bufferPool = sync.Pool{
     New: func() interface{} {
@@ -15,27 +18,25 @@ func ProcessString(s string) string{
 	buf := bufferPool.Get().([]byte)
 	defer bufferPool.Put(buf)
 
-	if cap(buf) < len(s) {
-		buf = make([]byte, len(s))
+	runes := []rune(s)
+	neededCap := len(runes)
+
+	if cap(buf) < neededCap {
+		buf = make([]byte, 0, neededCap+32)
 	} else {
-		buf = buf[:len(s)]
+		buf = buf[:0]
 	}
 
-	for i, ch := range s {
-		if ch >= 'a' && ch <= 'z' {
-		buf[i] = byte(ch - 32)
-		} else {
-			buf[i] = byte(ch)
-	}
- 	}
+	//лучше выделить буфер с запасом! Переделать. Для unicCode не работает.  
+	result := make([]byte, 0, len(runes)*4)
 
-	for i, ch := range s{
-		if ch >= 'a' && ch <= 'z'{
-			buf[i] = byte(ch - 32)
-		} else {
-			buf[i] = byte(ch)
-		}
+	for _, r := range runes {
+		// Преобразуем руну в верхний регистр
+		upperRune := unicode.ToUpper(r)
+		// Добавляем байты руны в результат
+		result = append(result, []byte(string(upperRune))...)
 	}
+	buf = append(buf, result...)
 	return string(buf)
 }
 
@@ -44,6 +45,7 @@ func main() {
 		"hello, world!",
 		"gopher",
 		"lorem ipsum dolor sit amet",
+		"Привет, Мир!",
 	}
 
 	for _, s := range examples {

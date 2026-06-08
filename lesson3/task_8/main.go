@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
 )
+
+//убрать sync.WaitGroup
 
 func parsingFunc(ch chan string) chan string {
 	outChan := make(chan string)
@@ -25,8 +26,6 @@ func RoundRobin(ch <- chan string, n int) []<-chan string {
 	for i := 0; i < n; i++ {
 		outputs[i] = make(chan string)
 	}
-	wg := sync.WaitGroup{}
-  defer wg.Wait()
 
 	go func() {
 		defer func() {

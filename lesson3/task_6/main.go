@@ -7,19 +7,21 @@ import (
 )
 
 func dbReplica(name string, in <-chan int, wg *sync.WaitGroup) {
-	defer wg.Done() 
+	defer wg.Done()
 	for data := range in {
 		fmt.Printf("Запись в %s: %d\n", name, data)
-		time.Sleep(100 * time.Millisecond) // Имитация задержки записи
+		time.Sleep(500 * time.Millisecond) // Имитация задержки записи
 	}
 	fmt.Printf("Реплика %s закрыта\n", name)
 }
 
+
 func main() {
+	input := make(chan int)
 	wg := sync.WaitGroup{}
-	
-	input := make(chan int) // Канал для входящих данных
-	replicas := []chan int{ // Реплики БД (каналы)
+	var mu sync.Mutex
+
+	replicas := []chan int{
 		make(chan int),
 		make(chan int),
 		make(chan int),
@@ -27,37 +29,38 @@ func main() {
 
 	for i, ch := range replicas {
 		wg.Add(1)
-		name := fmt.Sprint("Replica: ", i+1) //Перевод формата в строку(норм?)
-		go dbReplica(name, ch, &wg)
+		name := fmt.Sprintf("Replica %d", i+1)
+		go dbReplica(name, ch, &wg)  // каждая читает из СВОЕГО канала
 	}
 
 	go func() {
-		for i := 1; i <= 5; i++ {
-			input <- i
+		for data := range input{
+			done := make(chan bool)
+			count := 0
+
+			for _, ch := range replicas{
+				go func(c chan int,val int){
+					c <-val
+					mu.Lock()
+					count++
+					if count == len(replicas){
+						done <- true
+					}
+					mu.Unlock()
+				}(ch, data)
+			}
+			<-done
+			close(done)
 		}
-		close(input)
+		for _, ch := range replicas{
+			close(ch)
+		}
 	}()
 
-	for data := range input {
-		var wgTee sync.WaitGroup
-		wgTee.Add(len(replicas))
-
-	for _, ch := range replicas {
-			go func(c chan int, d int) {
-				defer wgTee.Done()
-				c <- d
-			}(ch, data)
-		}
-
-		wgTee.Wait()
+	for i:=1;i<=5;i++{
+		input <-i
 	}
-
-	//закрываем каналы всех реплик
-	for _, ch := range replicas {
-		close(ch) 
-	}
-
+	close(input)
 	wg.Wait()
 
-	fmt.Println("Все горутины завершены")
 }

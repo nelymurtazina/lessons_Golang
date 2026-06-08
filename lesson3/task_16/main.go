@@ -10,6 +10,13 @@ type ConfigManager struct {
 	once   sync.Once
 }
 
+//Контруктор
+func NewConfigManager() *ConfigManager {
+	return &ConfigManager{
+		config: nil, 
+	}
+}
+
 func (cm *ConfigManager) LoadConfig() {
 	cm.once.Do(func() {
 		fmt.Println("Загрузка конфигурации...")
@@ -24,6 +31,10 @@ func (cm *ConfigManager) LoadConfig() {
 
 func (cm *ConfigManager) Get(key string) string {
 	cm.LoadConfig()
+	//обработать пустую строку 
+	if value, ok := cm.config[key]; ok {
+		return value
+	}
 	return cm.config[key]
 }
 
