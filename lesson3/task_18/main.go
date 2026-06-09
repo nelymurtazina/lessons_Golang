@@ -6,15 +6,21 @@ import (
 	"unicode"
 )
 
-//ПЕРЕДЕЛАТЬ
+//sync.Pool — это структура в Go из пакета sync, предназначенная для управления временными объектами
+// и их переиспользования, чтобы снизить нагрузку на сборщик мусора и улучшить производительность.
+
+//Объекты помещаются в пул с помощью метода Put.
+// Извлекаются из пула с помощью метода Get.
+
+//ПЕРЕДЕЛАла
 
 var bufferPool = sync.Pool{
-    New: func() interface{} {
-        return make([]byte, 0, 128)
-    },
+	New: func() interface{} {
+		return make([]byte, 0, 128)
+	},
 }
 
-func ProcessString(s string) string{
+func ProcessString(s string) string {
 	buf := bufferPool.Get().([]byte)
 	defer bufferPool.Put(buf)
 
@@ -27,7 +33,7 @@ func ProcessString(s string) string{
 		buf = buf[:0]
 	}
 
-	//лучше выделить буфер с запасом! Переделать. Для unicCode не работает.  
+	//лучше выделить буфер с запасом! Переделать. Для unicCode не работает.
 	result := make([]byte, 0, len(runes)*4)
 
 	for _, r := range runes {

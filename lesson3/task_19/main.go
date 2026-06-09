@@ -23,7 +23,7 @@ func (r *RequestData) Reset() {
 var requestPool = sync.Pool{
 	New: func() interface{} {
 		return &RequestData{
-			Items: make([]string, 0, 10), //аллокация
+			Items: make([]string, 0, 10), 
 		}
 	},
 }
