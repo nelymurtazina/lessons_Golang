@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package user;
+
+//Указывает, где и как создать Go-код. Настройка для Go
+option go_package = "grpc-user-api/proto/user;user";
+
+// Импортируем стандартные типы
+import "google/protobuf/timestamp.proto";  // Для времени
+import "google/protobuf/empty.proto";      // Для пустого ответа
+import "google/protobuf/wrappers.proto";   // Для StringValue
+
+//Перечисление
+enum Role {
+  ROLE_UNKNOWN = 0;
+  ROLE_USER = 1;
+  ROLE_ADMIN = 2;
+}
+
+//Описание сервиса. Список всех методов API
+service UserService{
+  rpc CreateUser(CreateRequest) returns (CreateResponse);
+  rpc GetUser(GetRequest) returns (GetResponse);
+  rpc UpdateUser(UpdateRequest) returns (google.protobuf.Empty);
+  rpc DeleteUser(DeleteRequest) returns (google.protobuf.Empty);
+}
+
+message CreateRequest{
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  string password_confirm = 4;
+  Role role = 5;
+}
+
+message CreateResponse {
+  int64 id = 1;
+}
+
+message GetRequest {
+  int64 id =1;
+}
+
+message GetResponse {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  Role role = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message UpdateRequest{
+  int64 id = 1;
+  google.protobuf.StringValue name = 2;
+  google.protobuf.StringValue email = 3;
+}
+
+message DeleteRequest {
+  int64 id = 1;
+}
+
+// Ответы для Update и Delete — используем google.protobuf.Empty
+// (пустое сообщение, ничего не возвращаем)

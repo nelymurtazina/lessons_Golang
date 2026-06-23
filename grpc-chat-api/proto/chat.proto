@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package chat;
+
+//Указывает, где и как создать Go-код. Настройка для Go
+option go_package = "grpc-chat-api/proto/chat;chat";
+
+// Импортируем стандартные типы
+import "google/protobuf/timestamp.proto";  // Для времени
+import "google/protobuf/empty.proto";
+
+service ChatService{
+  rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+  rpc DeleteChat(DeleteChatRequest) returns (google.protobuf.Empty);
+  rpc SendMessage(SendMessageRequest) returns (google.protobuf.Empty);
+}
+
+message CreateChatRequest {
+  repeated string usernames = 1;
+}
+
+message CreateChatResponse{
+  int64 Id = 1; 
+}
+
+message DeleteChatRequest {
+    int64 Id = 1;
+}
+
+message SendMessageRequest{
+  string from = 1;
+  string text = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
