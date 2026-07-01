@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package spot_instrument;
+
+option go_package = "gRPC_progect/exchange-system/generation/spot;spot";
+
+import "google/protobuf/timestamp.proto";
+
+service SpotInstrumentService {
+    rpc ViewMarkets(ViewMarketsRequest) returns (ViewMarketsResponse);
+}
+
+message Market{
+  string id = 1;
+  string symbol = 2;
+  bool enabled = 3; //Флаг активности рынка. true = рынок торгуется, false = приостановлен.
+  google.protobuf.Timestamp delete_at = 4;
+}
+
+message ViewMarketsRequest {
+  repeated string user_roles = 1; //у пользователя может быть несколько ролей. 
+}
+
+//Список рынков.
+message ViewMarketsResponse {
+  repeated Market markets = 1; //возвращаем множество рынков, а не один.
+}
